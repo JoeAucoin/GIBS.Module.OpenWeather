@@ -1,0 +1,145 @@
+@namespace GIBS.Module.OpenWeather
+@inherits ModuleBase
+@inject ISettingService SettingService
+@inject IStringLocalizer<Settings> Localizer
+
+<div class="container">
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="value" HelpText="Enter a value" ResourceKey="SettingName" ResourceType="@resourceType">Name: </Label>
+            <div class="col-sm-9">
+                <input id="value" type="text" class="form-control" @bind="@_value" />
+            </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="apiKey" HelpText="Enter an API Key" ResourceKey="SettingApiKey" ResourceType="@resourceType">API Key: </Label>
+        <div class="col-sm-9">
+            <input id="apiKey" type="text" class="form-control" @bind="@_apiKey" />
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="city" HelpText="Enter a value" ResourceKey="SettingCity" ResourceType="@resourceType">City: </Label>
+        <div class="col-sm-9">
+            <input id="city" type="text" class="form-control" @bind="@_city" />
+        </div>
+    </div>
+
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="stateCode" HelpText="Enter a value" ResourceKey="SettingStateCode" ResourceType="@resourceType">State Code: </Label>
+        <div class="col-sm-9">
+            <input id="stateCode" type="text" class="form-control" @bind="@_stateCode" />
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="country" HelpText="Enter a value" ResourceKey="SettingCountryCode" ResourceType="@resourceType">Country Code: </Label>
+        <div class="col-sm-9">
+            <input id="country" type="text" class="form-control" @bind="@_country" />
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="units" HelpText="Enter a value" ResourceKey="SettingUnits" ResourceType="@resourceType">Units: </Label>
+        <div class="col-sm-9">
+            <input id="units" type="text" class="form-control" @bind="@_units" />
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="latitude" HelpText="Enter a value" ResourceKey="SettingLatitude" ResourceType="@resourceType">Latitude: </Label>
+        <div class="col-sm-9">
+            <input id="latitude" type="text" class="form-control" @bind="@_latitude" />
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="longitude" HelpText="Enter a value" ResourceKey="SettingLongitude" ResourceType="@resourceType">Longitude: </Label>
+        <div class="col-sm-9">
+            <input id="longitude" type="text" class="form-control" @bind="@_longitude" />
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="zoomLevel" HelpText="Enter a value" ResourceKey="SettingZoomLevel" ResourceType="@resourceType">Zoom Level: </Label>
+        <div class="col-sm-9">
+            <input id="zoomLevel" type="text" class="form-control" @bind="@_zoomLevel" />
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private string resourceType = "GIBS.Module.OpenWeather.Settings, GIBS.Module.OpenWeather.Client.Oqtane"; // for localization
+    public override string Title => "OpenWeather Settings";
+
+    string _value;
+    string _apiKey;
+    string _city;
+    string _stateCode;
+    string _country;
+    string _units = "imperial"; // default units
+    string _latitude;
+    string _longitude;
+    string _zoomLevel = "12"; // default zoom level
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            _value = SettingService.GetSetting(settings, "SettingName", "");
+            _apiKey = SettingService.GetSetting(settings, "SettingApiKey", "");
+
+            _city = SettingService.GetSetting(settings, "SettingCity", "");
+            _stateCode = SettingService.GetSetting(settings, "SettingStateCode", "");
+            _country = SettingService.GetSetting(settings, "SettingCountryCode", "");
+            _units = SettingService.GetSetting(settings, "SettingUnits", "");
+            _latitude = SettingService.GetSetting(settings, "SettingLatitude", "");
+            _longitude = SettingService.GetSetting(settings, "SettingLongitude", "");
+
+
+
+            _zoomLevel = SettingService.GetSetting(settings, "SettingZoomLevel", "");
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+
+    public async Task UpdateSettings()
+    {
+        try
+        {
+            Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            SettingService.SetSetting(settings, "SettingName", _value);
+            SettingService.SetSetting(settings, "SettingApiKey", _apiKey);
+            SettingService.SetSetting(settings, "SettingCity", _city);
+            SettingService.SetSetting(settings, "SettingStateCode", _stateCode);
+            SettingService.SetSetting(settings, "SettingCountryCode", _country);
+            SettingService.SetSetting(settings, "SettingUnits", _units);
+            SettingService.SetSetting(settings, "SettingLatitude", _latitude);
+            SettingService.SetSetting(settings, "SettingLongitude", _longitude);
+            SettingService.SetSetting(settings, "SettingZoomLevel", _zoomLevel);
+            await SettingService.UpdateModuleSettingsAsync(settings, ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+}

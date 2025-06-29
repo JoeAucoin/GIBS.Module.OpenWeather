@@ -1,0 +1,124 @@
+@using Oqtane.Modules.Controls
+@using GIBS.Module.OpenWeather.Services
+@using GIBS.Module.OpenWeather.Models
+
+@namespace GIBS.Module.OpenWeather
+@inherits ModuleBase
+@inject IOpenWeatherService OpenWeatherService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Edit> Localizer
+
+<form @ref="form" class="@(validated ? " was-validated" : "needs-validation" )" novalidate>
+    <div class="container">
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="name" HelpText="Enter a name" ResourceKey="Name">Name: </Label>
+            <div class="col-sm-9">
+                <input id="name" class="form-control" @bind="@_name" required />
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="description" HelpText="Enter a description" ResourceKey="Description">Description: </Label>
+            <div class="col-sm-9">
+                <textarea id="description" class="form-control" rows="5" @bind="@_description" />
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-success" @onclick="Save">@Localizer["Save"]</button>
+    <NavLink class="btn btn-secondary" href="@NavigateUrl()">@Localizer["Cancel"]</NavLink>
+    <br /><br />
+    @if (PageState.Action == "Edit")
+    {
+    <AuditInfo CreatedBy="@_createdby" CreatedOn="@_createdon" ModifiedBy="@_modifiedby" ModifiedOn="@_modifiedon"></AuditInfo>
+    }
+</form>
+
+@code {
+
+    public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
+
+    public override string Actions => "Add,Edit";
+
+    public override string Title => "Manage OpenWeather";
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" }
+    };
+
+    private ElementReference form;
+    private bool validated = false;
+
+    private int _id;
+    private string _name;
+
+    private string _description;
+    private string _createdby;
+    private DateTime _createdon;
+    private string _modifiedby;
+    private DateTime _modifiedon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (PageState.Action == "Edit")
+            {
+                _id = Int32.Parse(PageState.QueryString["id"]);
+                OpenWeather OpenWeather = await OpenWeatherService.GetOpenWeatherAsync(_id, ModuleState.ModuleId);
+                if (OpenWeather != null)
+                {
+                    _name = OpenWeather.Name;
+                    _description = OpenWeather.Description;
+                    _createdby = OpenWeather.CreatedBy;
+                    _createdon = OpenWeather.CreatedOn;
+                    _modifiedby = OpenWeather.ModifiedBy;
+                    _modifiedon = OpenWeather.ModifiedOn;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading OpenWeather {OpenWeatherId} {Error}", _id, ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            validated = true;
+            var interop = new Oqtane.UI.Interop(JSRuntime);
+            if (await interop.FormValid(form))
+            {
+                if (PageState.Action == "Add")
+                {
+                    OpenWeather OpenWeather = new OpenWeather();
+                    OpenWeather.ModuleId = ModuleState.ModuleId;
+                    OpenWeather.Name = _name;
+                    OpenWeather.Description = _description;
+                    OpenWeather = await OpenWeatherService.AddOpenWeatherAsync(OpenWeather);
+                    await logger.LogInformation("OpenWeather Added {OpenWeather}", OpenWeather);
+                }
+                else
+                {
+                    OpenWeather OpenWeather = await OpenWeatherService.GetOpenWeatherAsync(_id, ModuleState.ModuleId);
+                    OpenWeather.Name = _name;
+                    OpenWeather.Description = _description;
+                    await OpenWeatherService.UpdateOpenWeatherAsync(OpenWeather);
+                    await logger.LogInformation("OpenWeather Updated {OpenWeather}", OpenWeather);
+                }
+                NavigationManager.NavigateTo(NavigateUrl());
+            }
+            else
+            {
+                AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Saving OpenWeather {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
+        }
+    }
+}
