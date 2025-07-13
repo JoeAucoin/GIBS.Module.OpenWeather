@@ -130,14 +130,13 @@ else
 
                         <br />
                     }
-                    <b>Temperature:</b> @current.temp°F (Feels like: @current.feels_like°F)<br />
+                    <b>Temperature:</b> @(current.temp)@TempUnit (Feels like: @(current.feels_like)@TempUnit)<br />
                     <b>Humidity:</b> @current.humidity%<br />
                     <b>Pressure:</b> @current.pressure hPa<br />
-                    <b>Wind:</b> @current.wind_speed mph, @GetCompassDirection(current.wind_deg) (@current.wind_deg°)<br />
+                    <b>Wind:</b> @(current.wind_speed) @WindSpeedUnit, @GetCompassDirection(current.wind_deg) (@(current.wind_deg)°)<br />
                     @if (current.wind_gust != 0)
                     {
-                        string windgust = current.wind_gust + " mph";
-                        <b>Wind Gust:</b> @windgust.ToString()
+                        <b>Wind Gust:</b> @(current.wind_gust) @WindSpeedUnit
                     }
                    <br /><b>Clouds:</b> @current.clouds%<br />
                     @{
@@ -212,10 +211,10 @@ else
                                 <img src="@iconUrl" alt="@description" title="@description" style="float:right;" />
                             }
                             <br><b>Forecast:</b> @description?.ToUpper()
-                            <br><b>High:</b> @day.temp?.max°F / <b>Low:</b> @day.temp?.min°F
-                            <br><b>Day:</b> @day.temp?.day°F / <b>Night:</b> @day.temp?.night°F
-                            <br><b>Morning:</b> @day.temp?.morn°F / <b>Evening:</b> @day.temp?.eve°F
-                            <br><b>Feels Like:</b> Day @day.feels_like?.day°F / Night @day.feels_like?.night°F / Morn @day.feels_like?.morn°F / Eve @day.feels_like?.eve°F
+                            <br><b>High:</b> @(day.temp?.max)@TempUnit / <b>Low:</b> @(day.temp?.min)@TempUnit
+                            <br><b>Day:</b> @(day.temp?.day)@TempUnit / <b>Night:</b> @(day.temp?.night)@TempUnit
+                            <br><b>Morning:</b> @(day.temp?.morn)@TempUnit / <b>Evening:</b> @(day.temp?.eve)@TempUnit
+                            <br><b>Feels Like:</b> Day @(day.feels_like?.day)@TempUnit / Night @(day.feels_like?.night)@TempUnit / Morn @(day.feels_like?.morn)@TempUnit / Eve @(day.feels_like?.eve)@TempUnit
                             <br><b>Precipitation Probability:</b> @((day.pop * 100).ToString("F0"))%
                             @if (day.rain.HasValue)
                             {
@@ -225,7 +224,7 @@ else
                               
                             }
                             <br><b>Humidity:</b> @day.humidity%
-                            <br><b>Wind:</b> @day.wind_speed mph, @GetCompassDirection(day.wind_deg) (@day.wind_deg°) (Gust: @day.wind_gust mph)
+                            <br><b>Wind:</b> @(day.wind_speed) @WindSpeedUnit, @GetCompassDirection(day.wind_deg) (@(day.wind_deg)°) (Gust: @(day.wind_gust) @WindSpeedUnit)
                             <br><b>Clouds:</b> @day.clouds%
                             <br><b>UV Index:</b> @day.uvi
                             <br><b>Sunrise:</b> @DateTimeOffset.FromUnixTimeSeconds(day.sunrise).ToLocalTime().DateTime.ToString("h:mm tt"), <b>Sunset:</b> @DateTimeOffset.FromUnixTimeSeconds(day.sunset).ToLocalTime().DateTime.ToString("h:mm tt")
@@ -252,13 +251,6 @@ else
 
 
 @code {
-
-
-
-
-
-
-
     #nullable enable 
 
     //public override string RenderMode => RenderModes.Interactive;
@@ -267,6 +259,7 @@ else
     private string _latitude = "";
     private string _longitude = "";
     private string _locationName = "";
+    private string _units = "";
 
     private string _mapZoom = "";
 
@@ -279,28 +272,23 @@ else
 
     List<OpenWeather>? _OpenWeathers; 
 
-    // Using Oqtane's IModuleControl.Resources to declare JS dependencies
-    // This is the preferred way in Oqtane to ensure scripts are loaded correctly by the framework.
+    private string TempUnit => _units?.ToLower() == "metric" ? "°C" : "°F";
+    private string WindSpeedUnit => _units?.ToLower() == "metric" ? "m/s" : "mph";
+
     public override List<Resource> Resources
     {
         get
         {
-            // Ensure ModulePath() is available and correct. If not, paths might need adjustment.
-            // For Chart.js from CDN, the path is absolute.
-            // For Module.js, it's relative to the module's wwwroot folder.
-            // Oqtane typically serves module assets from /Modules/[YourModuleFullName]/
             string leafletJsPath = ModulePath() + "leaflet.js"; 
             string moduleJsPath = ModulePath() + "Module.js"; 
             string leafletCSS = ModulePath() + "leaflet.css";
             string moduleCSS = ModulePath() + "Module.css"; 
-            // Example: if ModulePath() is "/Modules/GIBS.Module.OpenWeather/", then moduleJsPath is "/Modules/GIBS.Module.OpenWeather/Module.js"
 
             return new List<Resource>
             {
-                // Load Chart.js library first
                  new Resource { ResourceType = ResourceType.Stylesheet, Url = leafletCSS } ,
                   new Resource { ResourceType = ResourceType.Stylesheet, Url = moduleCSS },
-                new Resource { ResourceType = ResourceType.Script, Url = "https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" }, // Using a specific version of Chart.js v3
+                new Resource { ResourceType = ResourceType.Script, Url = "https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" }, 
                 new Resource { ResourceType = ResourceType.Script, Url = leafletJsPath },
                 new Resource { ResourceType = ResourceType.Script, Url = moduleJsPath } 
             };
@@ -316,6 +304,7 @@ else
             _latitude = SettingService.GetSetting(ModuleState.Settings, "SettingLatitude", "");
             _longitude = SettingService.GetSetting(ModuleState.Settings, "SettingLongitude", "");
             _mapZoom =  SettingService.GetSetting(ModuleState.Settings, "SettingZoomLevel", "");
+            _units = SettingService.GetSetting(ModuleState.Settings, "SettingUnits", "imperial"); // Default to imperial
 
             if (string.IsNullOrEmpty(_apiKey) && UserSecurity.IsAuthorized(PageState.User, RoleNames.Admin))
             {
@@ -327,12 +316,10 @@ else
         catch (Exception ex)
         {
             await logger.LogError(ex, "Error Initializing OpenWeather Component: {Error}", ex.Message);
-            _errorMessage = $"Initialization Error: {ex.Message}"; // Show error in UI
+            _errorMessage = $"Initialization Error: {ex.Message}"; 
             _isLoading = false; 
         }
     }
-
-    // Removed AddScriptReference method as Oqtane's Resources property handles script loading.
 
     private async Task LoadAndDisplayWeatherDataAsync()
     {
@@ -361,7 +348,7 @@ else
             return;
         }
 
-        WeatherProvider provider = new WeatherProvider(_apiKey, lat, lon);
+        WeatherProvider provider = new WeatherProvider(_apiKey, lat, lon, _units);
         try
         {
             var weatherDataTask = provider.GetWeatherDataAsync();
@@ -395,76 +382,11 @@ else
         }
     }
 
-    // protected override async Task OnAfterRenderAsync(bool firstRender)
-    // {
-    //     if (firstRender)
-    //     {
-    //         // Oqtane's framework handles script loading declared in Resources.
-    //         // We can set a flag or check if JSRuntime is available for interop.
-    //         // For simplicity, we'll assume scripts are loaded by the time this runs after first render.
-    //         // A more robust check might involve a JS callback or polling.
-    //         _scriptsLoaded = true; 
-    //         await logger.LogInformation("Scripts should be loaded by Oqtane framework (first render).");
-    //         StateHasChanged(); // Trigger a re-render to attempt chart drawing if data is ready
-    //     }
-
-    //     if (_scriptsLoaded && !_isLoading && string.IsNullOrEmpty(_errorMessage) && _weatherData != null)
-    //     {
-    //         await logger.LogInformation("Attempting to render charts. Hourly data available: {IsAvailable}", _weatherData.hourly != null && _weatherData.hourly.Any());
-    //         if (_weatherData.hourly != null && _weatherData.hourly.Any())
-    //         {
-    //             try
-    //             {
-    //                 await RenderHourlyTempChart(_weatherData.hourly);
-
-    //                 await RenderHourlyWindChart(_weatherData.hourly);
-
-    //                 await RenderDailyTempChart(_weatherData.daily);
-
-    //                 await RenderDailyWindChart(_weatherData.daily);
-
-    //                 await logger.LogInformation("RenderHourlyTempChart called successfully.");
-    //             }
-    //             catch (JSException ex)
-    //             {
-    //                 await logger.LogError(ex, "JavaScript error rendering hourly temperature chart: {ErrorMessage}", ex.Message);
-    //                 if (!_errorMessage?.Contains("Chart Error") == true) 
-    //                 {
-    //                     _errorMessage = $"Chart Error (Hourly Temp): {ex.Message}. Check browser console for details.";
-    //                     StateHasChanged(); 
-    //                 }
-    //             }
-    //             catch (Exception ex) 
-    //             {
-    //                  await logger.LogError(ex, "General error rendering hourly temperature chart: {ErrorMessage}", ex.Message);
-    //                 if (!_errorMessage?.Contains("Chart Rendering Error") == true)
-    //                 {
-    //                    _errorMessage = $"Chart Rendering Error: {ex.Message}.";
-    //                    StateHasChanged();
-    //                 }
-    //             }
-    //         }
-    //         else if (_weatherData.hourly == null || !_weatherData.hourly.Any())
-    //         {
-    //              await logger.LogWarning("Hourly weather data is null or empty. Cannot render hourly temp chart.");
-    //         }
-    //     }
-    //     else
-    //     {
-    //         // Log why charts are not being rendered
-    //         if (!_scriptsLoaded) await logger.LogWarning("Skipping chart render: Scripts not marked as loaded.");
-    //         if (_isLoading) await logger.LogWarning("Skipping chart render: Still loading data.");
-    //         if (!string.IsNullOrEmpty(_errorMessage)) await logger.LogWarning("Skipping chart render: Error message present - {ErrorMessage}", _errorMessage);
-    //         if (_weatherData == null) await logger.LogWarning("Skipping chart render: WeatherData is null.");
-    //     }
-    // }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             _scriptsLoaded = true; 
-           // await logger.LogInformation("Scripts should be loaded by Oqtane framework (first render).");
             StateHasChanged(); 
         }
 
@@ -473,12 +395,10 @@ else
             // Hourly Charts
             if (_weatherData.hourly != null && _weatherData.hourly.Any())
             {
-              //  await logger.LogInformation("Attempting to render hourly charts.");
                 try
                 {
                     await RenderHourlyTempChart(_weatherData.hourly);
                     await RenderHourlyWindChart(_weatherData.hourly);
-                 //   await logger.LogInformation("Hourly charts rendering initiated.");
                 }
                 catch (JSException ex) { await HandleChartJsError("Hourly", ex); }
                 catch (Exception ex) { await HandleChartGeneralError("Hourly", ex); }
@@ -488,12 +408,10 @@ else
             // Daily Charts
             if (_weatherData.daily != null && _weatherData.daily.Any())
             {
-             //   await logger.LogInformation("Attempting to render daily charts.");
                 try
                 {
                     await RenderDailyTempChart(_weatherData.daily);
                     await RenderDailyWindChart(_weatherData.daily);
-                  //  await logger.LogInformation("Daily charts rendering initiated.");
                 }
                 catch (JSException ex) { await HandleChartJsError("Daily", ex); }
                 catch (Exception ex) { await HandleChartGeneralError("Daily", ex); }
@@ -531,12 +449,10 @@ else
         }
     }
 
-        private async void LogSkippingChartOrMapRender() // Changed to async void for logger calls
+        private async void LogSkippingChartOrMapRender() 
     {
         if (!_scriptsLoaded) await logger.LogWarning("Skipping render: Scripts not marked as loaded.");
-       // if (_isLoading) await logger.LogWarning("Skipping render: Still loading data.");
         if (!string.IsNullOrEmpty(_errorMessage)) await logger.LogWarning("Skipping render: Error message present - {ErrorMessage}", _errorMessage);
-      //  if (_weatherData == null) await logger.LogWarning("Skipping render: WeatherData is null.");
     }
 
 
@@ -546,16 +462,9 @@ else
         {
             string mapDivId = $"weatherMap_{ModuleState.ModuleId}";
             string leafletImagesPath = ModulePath(); 
-            // _mapZoom is now a class field, ensure it's set (e.g., in OnInitializedAsync from settings or a default)
-
-           // await logger.LogInformation("Attempting to initialize map. ID: {MapID}, Lat: {Lat}, Lon: {Lon}, Zoom: {Zoom}, LocName: {LocName}, ImgPath: {ImgPath}",
-            //    mapDivId, latitude, longitude, _mapZoom, _locationName, leafletImagesPath);
-
-            // Ensure the JS function name matches what's in Module.js (e.g., "GIBS.OpenWeather.initializeMap")
+            
             await JSRuntime.InvokeVoidAsync("GIBS.OpenWeather.initializeMap", 
                 mapDivId, latitude, longitude, _mapZoom, _locationName, leafletImagesPath);
- 
-                //  await logger.LogInformation("Map initialization script invoked for {MapID}.", mapDivId);
         }
         catch (JSException ex)
         {
@@ -591,13 +500,11 @@ else
         var temperatures = hourlyList.Take(24).Select(h => h.temp).ToList();  
         string canvasId = $"hourlyTempChart_{ModuleState.ModuleId}";  
         
-       // await logger.LogInformation("Preparing to render chart with ID: {CanvasId}, Labels count: {LabelsCount}, Temps count: {TempsCount}", canvasId, labels.Count, temperatures.Count);
-
         var datasets = new List<ChartDataset>  
         {  
-            new ChartDataset { Label = "Temperature (°F)", Data = temperatures, BorderColor = "rgba(75, 192, 192, 1)", BackgroundColor = "rgba(75, 192, 192, 0.2)", Fill = true }  
+            new ChartDataset { Label = $"Temperature ({TempUnit})", Data = temperatures, BorderColor = "rgba(75, 192, 192, 1)", BackgroundColor = "rgba(75, 192, 192, 0.2)", Fill = true }  
         };  
-        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Time", "Temperature (°F)");  
+        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Time", $"Temperature ({TempUnit})");  
     } 
 
     private async Task RenderHourlyWindChart(Hourly[] hourlyArray)
@@ -611,17 +518,15 @@ else
         var hourlyList = hourlyArray.ToList();
         var labels = hourlyList.Take(24).Select(h => DateTimeOffset.FromUnixTimeSeconds(h.dt).ToLocalTime().DateTime.ToString("h tt")).ToList();
         var windSpeeds = hourlyList.Take(24).Select(h => h.wind_speed).ToList();
-        var windGusts = hourlyList.Take(24).Select(h => h.wind_gust).ToList(); // Assuming wind_gust is a double
+        var windGusts = hourlyList.Take(24).Select(h => h.wind_gust).ToList(); 
         string canvasId = $"hourlyWindChart_{ModuleState.ModuleId}";
-
-      //  await logger.LogInformation("Preparing to render Wind chart with ID: {CanvasId}, Labels count: {LabelsCount}, Wind Speeds count: {SpeedsCount}, Gusts count: {GustsCount}", canvasId, labels.Count, windSpeeds.Count, windGusts.Count);
 
         var datasets = new List<ChartDataset>
         {
-            new ChartDataset { Label = "Wind Speed (mph)", Data = windSpeeds, BorderColor = "rgba(54, 162, 235, 1)", BackgroundColor = "rgba(54, 162, 235, 0.2)", Fill = true },
-            new ChartDataset { Label = "Wind Gust (mph)", Data = windGusts, BorderColor = "rgba(255, 99, 132, 1)", BackgroundColor = "rgba(255, 99, 132, 0.2)", Fill = true } // Optional: dashed line for gusts  , BorderDash = new List<int> { 5, 5 }
+            new ChartDataset { Label = $"Wind Speed ({WindSpeedUnit})", Data = windSpeeds, BorderColor = "rgba(54, 162, 235, 1)", BackgroundColor = "rgba(54, 162, 235, 0.2)", Fill = true },
+            new ChartDataset { Label = $"Wind Gust ({WindSpeedUnit})", Data = windGusts, BorderColor = "rgba(255, 99, 132, 1)", BackgroundColor = "rgba(255, 99, 132, 0.2)", Fill = true } 
         };
-        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Time", "Wind Speed (mph)", true); // true for yAxisBeginAtZero
+        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Time", $"Wind Speed ({WindSpeedUnit})", true); 
     }
 
     private async Task RenderDailyTempChart(Daily[] dailyArray)
@@ -634,19 +539,16 @@ else
 
         var dailyList = dailyArray.ToList();
         var labels = dailyList.Select(d => DateTimeOffset.FromUnixTimeSeconds(d.dt).ToLocalTime().DateTime.ToString("M/d")).ToList();
-        // Ensure Temp is not null before accessing Max/Min. Provide default (e.g., 0 or double.NaN) if it can be null.
         var maxTemps = dailyList.Select(d => d.temp?.max ?? 0).ToList(); 
         var minTemps = dailyList.Select(d => d.temp?.min ?? 0).ToList();
         string canvasId = $"dailyTempChart_{ModuleState.ModuleId}";
 
-       // await logger.LogInformation("Preparing to render Daily Temp chart with ID: {CanvasId}, Labels count: {LabelsCount}, Max Temps: {MaxTempsCount}, Min Temps: {MinTempsCount}", canvasId, labels.Count, maxTemps.Count, minTemps.Count);
-        
         var datasets = new List<ChartDataset>
         {
-            new ChartDataset { Label = "Max Temp (°F)", Data = maxTemps, BorderColor = "rgba(255, 99, 132, 1)", BackgroundColor = "rgba(255, 99, 132, 0.2)", Fill = false },
-            new ChartDataset { Label = "Min Temp (°F)", Data = minTemps, BorderColor = "rgba(54, 162, 235, 1)", BackgroundColor = "rgba(54, 162, 235, 0.2)", Fill = false }
+            new ChartDataset { Label = $"Max Temp ({TempUnit})", Data = maxTemps, BorderColor = "rgba(255, 99, 132, 1)", BackgroundColor = "rgba(255, 99, 132, 0.2)", Fill = false },
+            new ChartDataset { Label = $"Min Temp ({TempUnit})", Data = minTemps, BorderColor = "rgba(54, 162, 235, 1)", BackgroundColor = "rgba(54, 162, 235, 0.2)", Fill = false }
         };
-        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Date", "Temperature (°F)");
+        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Date", $"Temperature ({TempUnit})");
     }
 
     private async Task RenderDailyWindChart(Daily[] dailyArray)
@@ -660,17 +562,15 @@ else
         var dailyList = dailyArray.ToList();
         var labels = dailyList.Select(d => DateTimeOffset.FromUnixTimeSeconds(d.dt).ToLocalTime().DateTime.ToString("M/d")).ToList();
         var windSpeeds = dailyList.Select(d => d.wind_speed).ToList();
-        var windGusts = dailyList.Select(d => d.wind_gust).ToList(); // Assuming wind_gust is available and is a double
+        var windGusts = dailyList.Select(d => d.wind_gust).ToList(); 
         string canvasId = $"dailyWindChart_{ModuleState.ModuleId}";
         
-      //  await logger.LogInformation("Preparing to render Daily Wind chart with ID: {CanvasId}, Labels count: {LabelsCount}, Wind Speeds: {SpeedsCount}, Gusts: {GustsCount}", canvasId, labels.Count, windSpeeds.Count, windGusts.Count);
-
         var datasets = new List<ChartDataset>
         {
-            new ChartDataset { Label = "Avg Wind Speed (mph)", Data = windSpeeds, BorderColor = "rgba(75, 192, 192, 1)", BackgroundColor = "rgba(75, 192, 192, 0.2)", Fill = false },
-            new ChartDataset { Label = "Wind Gust (mph)", Data = windGusts, BorderColor = "rgba(153, 102, 255, 1)", BackgroundColor = "rgba(153, 102, 255, 0.2)", Fill = false }
+            new ChartDataset { Label = $"Avg Wind Speed ({WindSpeedUnit})", Data = windSpeeds, BorderColor = "rgba(75, 192, 192, 1)", BackgroundColor = "rgba(75, 192, 192, 0.2)", Fill = false },
+            new ChartDataset { Label = $"Wind Gust ({WindSpeedUnit})", Data = windGusts, BorderColor = "rgba(153, 102, 255, 1)", BackgroundColor = "rgba(153, 102, 255, 0.2)", Fill = false }
         };
-        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Date", "Wind Speed (mph)", true); // true for yAxisBeginAtZero
+        await JSRuntime.InvokeVoidAsync("renderChart", canvasId, "line", labels, datasets, "Date", $"Wind Speed ({WindSpeedUnit})", true); 
     }
 
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -17,6 +18,8 @@ namespace GIBS.Module.OpenWeather.Client.Services
         private readonly string _apiKey;
         private readonly double _latitude;
         private readonly double _longitude;
+        private readonly string _units;
+      // private readonly IHttpClientFactory _httpClientFactory;
 
         private const string ApiUrl = "https://api.openweathermap.org/data/3.0/onecall";
         private const string ApiOverviewUrl = "https://api.openweathermap.org/data/3.0/onecall/overview";
@@ -24,16 +27,17 @@ namespace GIBS.Module.OpenWeather.Client.Services
 
         private static readonly HttpClient httpClient = new HttpClient();
 
-        public WeatherProvider(string apiKey, double latitude, double longitude)
+        public WeatherProvider(string apiKey, double latitude, double longitude, string units)
         {
             _apiKey = apiKey;
             _latitude = latitude;
             _longitude = longitude;
+            _units = units;
         }
 
         public async Task<WeatherData> GetWeatherDataAsync()
         {
-            string url = $"{ApiUrl}?lat={_latitude}&lon={_longitude}&exclude=minutely&appid={_apiKey}&units=imperial";
+            string url = $"{ApiUrl}?lat={_latitude}&lon={_longitude}&exclude=minutely&appid={_apiKey}&units={_units}";
             try
             {
                 HttpResponseMessage response = await httpClient.GetAsync(url);
@@ -64,7 +68,7 @@ namespace GIBS.Module.OpenWeather.Client.Services
 
         public async Task<WeatherOverview?> GetWeatherOverviewAsync()
         {
-            string url = $"{ApiOverviewUrl}?lat={_latitude}&lon={_longitude}&units=imperial&appid={_apiKey}";
+            string url = $"{ApiOverviewUrl}?lat={_latitude}&lon={_longitude}&units={_units}&appid={_apiKey}";
             try
             {
                 HttpResponseMessage response = await httpClient.GetAsync(url);
@@ -121,6 +125,28 @@ namespace GIBS.Module.OpenWeather.Client.Services
                 return null;
             }
         }
+
+        // New method for geocoding lookup
+        // This method now uses the same static HttpClient, fixing the error.
+        public async Task<List<GeocodingResult>> GetGeocodingDataAsync(string apiKey, string city, string state, string countryCode)
+        {
+            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(city))
+            {
+                return new List<GeocodingResult>();
+            }
+            string geocodingApiUrl = $"https://api.openweathermap.org/geo/1.0/direct?q={city},{state},{countryCode}&limit=10&appid={apiKey}";
+            try
+            {
+                return await httpClient.GetFromJsonAsync<List<GeocodingResult>>(geocodingApiUrl);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error (GetGeocodingDataAsync): {ex.Message}");
+                return new List<GeocodingResult>();
+            }
+        }
+
+
 
         //private async Task RenderHourlyWindChart(List<HourlyWeatherInfo> hourly)
         //{

@@ -14,6 +14,7 @@ namespace GIBS.Module.OpenWeather
             ReleaseVersions = "1.0.3",
             Dependencies = "GIBS.Module.OpenWeather.Shared.Oqtane",
             PackageName = "GIBS.Module.OpenWeather" 
+
         };
     }
 }

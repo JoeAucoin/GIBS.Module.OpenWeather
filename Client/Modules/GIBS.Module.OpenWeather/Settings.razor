@@ -1,26 +1,27 @@
+@using GIBS.Module.OpenWeather.Client.Services
+@using GIBS.Module.OpenWeather.Services
+@using GIBS.Module.OpenWeather.Models
+@using GIBS.Module.OpenWeather
 @namespace GIBS.Module.OpenWeather
 @inherits ModuleBase
 @inject ISettingService SettingService
+@inject IOpenWeatherService OpenWeatherService
 @inject IStringLocalizer<Settings> Localizer
 
+
 <div class="container">
+
     <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="value" HelpText="Enter a value" ResourceKey="SettingName" ResourceType="@resourceType">Name: </Label>
-            <div class="col-sm-9">
-                <input id="value" type="text" class="form-control" @bind="@_value" />
-            </div>
-    </div>
-    <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="apiKey" HelpText="Enter an API Key" ResourceKey="SettingApiKey" ResourceType="@resourceType">API Key: </Label>
+        <Label Class="col-sm-3" For="apiKey" HelpText="Enter an API Key. You can sign uo here: https://home.openweathermap.org/users/sign_up" ResourceKey="SettingApiKey" ResourceType="@resourceType">API Key: </Label>
         <div class="col-sm-9">
-            <input id="apiKey" type="text" class="form-control" @bind="@_apiKey" />
+            <input id="apiKey" type="text" class="form-control" @bind="@_apiKey" required />
         </div>
     </div>
 
     <div class="row mb-1 align-items-center">
         <Label Class="col-sm-3" For="city" HelpText="Enter a value" ResourceKey="SettingCity" ResourceType="@resourceType">City: </Label>
         <div class="col-sm-9">
-            <input id="city" type="text" class="form-control" @bind="@_city" />
+            <input id="city" type="text" class="form-control" @bind="@_city" required />
         </div>
     </div>
 
@@ -28,38 +29,74 @@
     <div class="row mb-1 align-items-center">
         <Label Class="col-sm-3" For="stateCode" HelpText="Enter a value" ResourceKey="SettingStateCode" ResourceType="@resourceType">State Code: </Label>
         <div class="col-sm-9">
-            <input id="stateCode" type="text" class="form-control" @bind="@_stateCode" />
+            <input id="stateCode" type="text" class="form-control" @bind="@_stateCode" required />
         </div>
     </div>
 
     <div class="row mb-1 align-items-center">
         <Label Class="col-sm-3" For="country" HelpText="Enter a value" ResourceKey="SettingCountryCode" ResourceType="@resourceType">Country Code: </Label>
         <div class="col-sm-9">
-            <input id="country" type="text" class="form-control" @bind="@_country" />
+            <input id="country" type="text" class="form-control" @bind="@_country" required  />
         </div>
     </div>
+
     <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="units" HelpText="Enter a value" ResourceKey="SettingUnits" ResourceType="@resourceType">Units: </Label>
+        <div class="col-sm-3"></div>
         <div class="col-sm-9">
-            <input id="units" type="text" class="form-control" @bind="@_units" />
+            <button type="button" class="btn btn-primary" @onclick="LookupLatLong">Lookup Lat/Long</button>
+            @if (!string.IsNullOrEmpty(_lookupMessage))
+            {
+                <span class="ms-2 form-text text-danger">@_lookupMessage</span>
+            }
+        </div>
+    </div>
+
+    @if (_locationChoices.Any())
+    {
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="locationSelect" ResourceKey="SelectLocation" ResourceType="@resourceType">Select Location:</Label>
+            <div class="col-sm-9">
+                <select id="locationSelect" class="form-select" @onchange="OnLocationSelected">
+                    <option value="-1">-- Please Select a Location --</option>
+                    @foreach (var location in _locationChoices)
+                    {
+                        <option value="@location.Value">@location.Display</option>
+                    }
+                </select>
+            </div>
+        </div>
+    }
+
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" ResourceKey="SettingUnits" ResourceType="@resourceType">Units: </Label>
+        <div class="col-sm-9">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="unitsOptions" id="imperialRadio" value="imperial" checked="@(_units == "imperial")" @onchange="@(() => _units = "imperial")" />
+                <label class="form-check-label" for="imperialRadio">Imperial</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="unitsOptions" id="metricRadio" value="metric" checked="@(_units == "metric")" @onchange="@(() => _units = "metric")" />
+                <label class="form-check-label" for="metricRadio">Metric</label>
+            </div>
         </div>
     </div>
 
     <div class="row mb-1 align-items-center">
         <Label Class="col-sm-3" For="latitude" HelpText="Enter a value" ResourceKey="SettingLatitude" ResourceType="@resourceType">Latitude: </Label>
         <div class="col-sm-9">
-            <input id="latitude" type="text" class="form-control" @bind="@_latitude" />
+            <input id="latitude" type="text" class="form-control" @bind="@_latitude" required />
         </div>
     </div>
 
     <div class="row mb-1 align-items-center">
         <Label Class="col-sm-3" For="longitude" HelpText="Enter a value" ResourceKey="SettingLongitude" ResourceType="@resourceType">Longitude: </Label>
         <div class="col-sm-9">
-            <input id="longitude" type="text" class="form-control" @bind="@_longitude" />
+            <input id="longitude" type="text" class="form-control" @bind="@_longitude" required />
         </div>
     </div>
     <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="zoomLevel" HelpText="Enter a value" ResourceKey="SettingZoomLevel" ResourceType="@resourceType">Zoom Level: </Label>
+        <Label Class="col-sm-3" For="zoomLevel" HelpText="Enter a value for the map zoom level. 1-16. I suggest 12." ResourceKey="SettingZoomLevel" ResourceType="@resourceType">Zoom Level: </Label>
         <div class="col-sm-9">
             <input id="zoomLevel" type="text" class="form-control" @bind="@_zoomLevel" />
         </div>
@@ -68,24 +105,10 @@
 </div>
 
 @code {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private string resourceType = "GIBS.Module.OpenWeather.Settings, GIBS.Module.OpenWeather.Client.Oqtane"; // for localization
     public override string Title => "OpenWeather Settings";
 
+    // Settings fields
     string _value;
     string _apiKey;
     string _city;
@@ -96,24 +119,24 @@
     string _longitude;
     string _zoomLevel = "12"; // default zoom level
 
+    // Fields for the lookup functionality
+    private string _lookupMessage = "";
+    private List<LocationChoice> _locationChoices = new List<LocationChoice>();
+
     protected override async Task OnInitializedAsync()
     {
         try
         {
             Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
-            _value = SettingService.GetSetting(settings, "SettingName", "");
+            
             _apiKey = SettingService.GetSetting(settings, "SettingApiKey", "");
-
             _city = SettingService.GetSetting(settings, "SettingCity", "");
             _stateCode = SettingService.GetSetting(settings, "SettingStateCode", "");
             _country = SettingService.GetSetting(settings, "SettingCountryCode", "");
-            _units = SettingService.GetSetting(settings, "SettingUnits", "");
+            _units = SettingService.GetSetting(settings, "SettingUnits", "imperial");
             _latitude = SettingService.GetSetting(settings, "SettingLatitude", "");
             _longitude = SettingService.GetSetting(settings, "SettingLongitude", "");
-
-
-
-            _zoomLevel = SettingService.GetSetting(settings, "SettingZoomLevel", "");
+            _zoomLevel = SettingService.GetSetting(settings, "SettingZoomLevel", "12");
         }
         catch (Exception ex)
         {
@@ -126,7 +149,7 @@
         try
         {
             Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
-            SettingService.SetSetting(settings, "SettingName", _value);
+            
             SettingService.SetSetting(settings, "SettingApiKey", _apiKey);
             SettingService.SetSetting(settings, "SettingCity", _city);
             SettingService.SetSetting(settings, "SettingStateCode", _stateCode);
@@ -141,5 +164,78 @@
         {
             AddModuleMessage(ex.Message, MessageType.Error);
         }
+    }
+
+    private async Task LookupLatLong()
+    {
+        _lookupMessage = "";
+        _locationChoices.Clear();
+
+        if (string.IsNullOrEmpty(_apiKey))
+        {
+            _lookupMessage = "API Key is required.";
+            return;
+        }
+        if (string.IsNullOrEmpty(_city))
+        {
+            _lookupMessage = "City is required.";
+            return;
+        }
+
+        try
+        {
+            // Use a temporary WeatherProvider instance for the lookup
+            var provider = new WeatherProvider(_apiKey, 0, 0, _units); // Lat/Lon don't matter for this call
+            var results = await provider.GetGeocodingDataAsync(_apiKey, _city, _stateCode, _country);
+
+            if (results == null || !results.Any())
+            {
+                _lookupMessage = "Location not found.";
+            }
+            else if (results.Count == 1)
+            {
+                var location = results.First();
+                _latitude = location.lat.ToString();
+                _longitude = location.lon.ToString();
+                _lookupMessage = "Latitude and Longitude found!";
+            }
+            else
+            {
+                _locationChoices = results.Select(r => new LocationChoice
+                {
+                    Display = $"{r.name}, {r.state}, {r.country} ({r.lat}, {r.lon})",
+                    Value = $"{r.lat},{r.lon}"
+                }).ToList();
+                _lookupMessage = "Multiple locations found. Please select one.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _lookupMessage = $"An error occurred: {ex.Message}";
+            // Optionally log the full exception
+        }
+    }
+
+    private void OnLocationSelected(ChangeEventArgs e)
+    {
+        var selectedValue = e.Value.ToString();
+        if (selectedValue != "-1")
+        {
+            var parts = selectedValue.Split(',');
+            if (parts.Length == 2)
+            {
+                _latitude = parts[0];
+                _longitude = parts[1];
+                _lookupMessage = "Location selected.";
+                _locationChoices.Clear(); // Hide dropdown after selection
+            }
+        }
+    }
+
+    // Helper class for the dropdown
+    public class LocationChoice
+    {
+        public string Display { get; set; }
+        public string Value { get; set; }
     }
 }

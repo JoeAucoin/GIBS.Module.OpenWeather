@@ -166,6 +166,15 @@ namespace GIBS.Module.OpenWeather.Client.Services
         public string[] tags { get; set; }
     }
 
+    public class GeocodingResult
+    {
+        public string name { get; set; }
+        public double lat { get; set; }
+        public double lon { get; set; }
+        public string country { get; set; }
+        public string state { get; set; }
+    }
+
 
 
 }
