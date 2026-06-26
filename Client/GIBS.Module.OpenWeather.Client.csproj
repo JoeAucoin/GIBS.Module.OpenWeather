@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>1.0.3</Version>
+    <Version>10.0.4</Version>
     <Authors>GIBS</Authors>
     <Company>GIBS</Company>
     <Description>Weather data provided by OpenWeatherMap.org</Description>
@@ -23,6 +23,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.9" />
+    <PackageReference Include="Oqtane.Licensing" Version="5.1.0" />
     <PackageReference Include="System.Net.Http.Json" Version="10.0.9" />
   </ItemGroup>
 
@@ -33,10 +34,6 @@
   <ItemGroup>
     <Reference Include="Oqtane.Client"><HintPath>..\..\oqtane.framework-6.1.2-Source\Oqtane.Server\bin\Debug\net10.0\Oqtane.Client.dll</HintPath></Reference>
     <Reference Include="Oqtane.Shared"><HintPath>..\..\oqtane.framework-6.1.2-Source\Oqtane.Server\bin\Debug\net10.0\Oqtane.Shared.dll</HintPath></Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Oqtane.Client" Version="10.2.1" />
   </ItemGroup>
 
   <PropertyGroup>

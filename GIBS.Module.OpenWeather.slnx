@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="../oqtane.framework-6.1.2-Source/Oqtane.Server/Oqtane.Server.csproj">
+    <Build Project="false" />
+  </Project>
+  <Project Path="Client/GIBS.Module.OpenWeather.Client.csproj" />
+  <Project Path="Package/GIBS.Module.OpenWeather.Package.csproj" />
+  <Project Path="Server/GIBS.Module.OpenWeather.Server.csproj" />
+  <Project Path="Shared/GIBS.Module.OpenWeather.Shared.csproj" />
+</Solution>

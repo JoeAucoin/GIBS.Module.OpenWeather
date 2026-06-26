@@ -2,6 +2,8 @@
 @using GIBS.Module.OpenWeather.Services
 @using GIBS.Module.OpenWeather.Models
 @using GIBS.Module.OpenWeather
+@using Oqtane.Licensing
+
 @namespace GIBS.Module.OpenWeather
 @inherits ModuleBase
 @inject IOpenWeatherService OpenWeatherService
@@ -11,7 +13,14 @@
 
 @* Removed: @inject IJSRuntime JSRuntime - Use JSRuntime from ModuleBase *@
 
-
+<LicenseView PackageName="@ModuleState.ModuleDefinition.PackageName">
+    <Licensed>
+       
+    </Licensed>
+    <NotLicensed>
+        <p>If you're looking for customization options, please reach out! https://gibs.net/contact</p>
+    </NotLicensed>
+</LicenseView>
   
 
     @if (_isLoading)
