@@ -11,47 +11,8 @@
 
 @* Removed: @inject IJSRuntime JSRuntime - Use JSRuntime from ModuleBase *@
 
-@if (_OpenWeathers == null && _isLoading && string.IsNullOrEmpty(_errorMessage))
-{
-    <p><em>Loading Weather...</em></p>
-}
-else if (_isLoading && string.IsNullOrEmpty(_errorMessage))
-{
-    <p><em>Fetching weather data...</em></p>
-}
-else if (!string.IsNullOrEmpty(_errorMessage))
-{
-   <p style="color: red;">Error: @_errorMessage</p>
-}
-else
-{
+
   
-
-    <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add OpenWeather" ResourceKey="Add" />
-    <br />
-
-    @if (_OpenWeathers != null && _OpenWeathers.Count != 0)
-    {
-        <Pager Items="@_OpenWeathers">
-            <Header>
-                <th style="width: 1px;">&nbsp;</th>
-                <th style="width: 1px;">&nbsp;</th>
-                <th><b>@Localizer["Name"]</b></th>
-            </Header>
-            <Row>
-                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.OpenWeatherId.ToString())" ResourceKey="Edit"  /></td>
-                <td><ActionDialog Header="Delete OpenWeather" Message="Are You Sure You Wish To Delete This OpenWeather?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.OpenWeatherId.ToString()" /></td>
-                <td>@context.Name<br />@context.Description</td>
-            </Row>
-        </Pager>
-    }
-    @* else if (_OpenWeathers != null)
-    {
-      
-    } *@
-
-
-   
 
     @if (_isLoading)
     {
@@ -246,7 +207,7 @@ else
 <div class="owcredits"><cite>Weather data provided by <a href="https://openweathermap.org/" target="_blank">OpenWeather</a></cite></div>
 
 
-}
+
 
 
 
@@ -270,7 +231,7 @@ else
     private string? _errorMessage;
     private bool _scriptsLoaded = false; // New flag
 
-    List<OpenWeather>? _OpenWeathers; 
+  //  List<OpenWeather>? _OpenWeathers; 
 
     private string TempUnit => _units?.ToLower() == "metric" ? "°C" : "°F";
     private string WindSpeedUnit => _units?.ToLower() == "metric" ? "m/s" : "mph";
@@ -299,7 +260,7 @@ else
     {
         try
         {
-            _OpenWeathers = await OpenWeatherService.GetOpenWeathersAsync(ModuleState.ModuleId);
+           // _OpenWeathers = await OpenWeatherService.GetOpenWeathersAsync(ModuleState.ModuleId);
             _apiKey = SettingService.GetSetting(ModuleState.Settings, "SettingApiKey", "");
             _latitude = SettingService.GetSetting(ModuleState.Settings, "SettingLatitude", "");
             _longitude = SettingService.GetSetting(ModuleState.Settings, "SettingLongitude", "");
@@ -592,7 +553,7 @@ else
         {
             await OpenWeatherService.DeleteOpenWeatherAsync(openWeatherToDelete.OpenWeatherId, ModuleState.ModuleId);
             await logger.LogInformation("OpenWeather Deleted {OpenWeather}", openWeatherToDelete);
-            _OpenWeathers = await OpenWeatherService.GetOpenWeathersAsync(ModuleState.ModuleId); 
+            // _OpenWeathers = await OpenWeatherService.GetOpenWeathersAsync(ModuleState.ModuleId); 
             StateHasChanged();
         }
         catch (Exception ex)
