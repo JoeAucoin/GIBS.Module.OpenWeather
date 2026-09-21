@@ -250,7 +250,7 @@
         get
         {
             string leafletJsPath = ModulePath() + "leaflet.js"; 
-            string moduleJsPath = ModulePath() + "Module.js"; 
+            string moduleJsPath = ModulePath() + "Module.js?v=1"; 
             string leafletCSS = ModulePath() + "leaflet.css";
             string moduleCSS = ModulePath() + "Module.css"; 
 
@@ -355,11 +355,15 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        
+
         if (firstRender)
         {
-            _scriptsLoaded = true; 
-            StateHasChanged(); 
+            // Wait for all required scripts to be loaded (Chart.js, Leaflet, and Module.js)
+            _scriptsLoaded = await WaitForScriptsToLoadAsync();
+            if (_scriptsLoaded)
+            {
+                StateHasChanged(); 
+            }
         }
 
         if (_scriptsLoaded && !_isLoading && string.IsNullOrEmpty(_errorMessage) && _weatherData != null)
@@ -554,6 +558,41 @@
         public string BorderColor { get; set; } = "rgba(75, 192, 192, 1)";
         public string BackgroundColor { get; set; } = "rgba(75, 192, 192, 0.2)";
         public bool Fill { get; set; } = false;
+    }
+
+
+    private async Task<bool> WaitForScriptsToLoadAsync(int maxWaitMs = 5000)
+    {
+        int elapsedMs = 0;
+        int checkIntervalMs = 100;
+
+        while (elapsedMs < maxWaitMs)
+        {
+            // Check if Chart.js is loaded
+            try
+            {
+                var chartLoaded = await JSRuntime.InvokeAsync<bool>("eval", "typeof Chart !== 'undefined'");
+                var leafletLoaded = await JSRuntime.InvokeAsync<bool>("eval", "typeof L !== 'undefined'");
+                var openWeatherLoaded = await JSRuntime.InvokeAsync<bool>("eval", "window.GIBS?.modulesLoadedStatus?.OpenWeatherLoaded === true");
+
+                if (chartLoaded && leafletLoaded && openWeatherLoaded)
+                {
+                    await logger.LogInformation("All required scripts loaded: Chart.js, Leaflet.js, and Module.js");
+                    return true;
+                }
+            }
+            catch
+            {
+                // Scripts may not be available yet, continue waiting
+            }
+
+            // Wait before checking again
+            await Task.Delay(checkIntervalMs);
+            elapsedMs += checkIntervalMs;
+        }
+
+        await logger.LogWarning("Timeout waiting for scripts to load. Chart.js, Leaflet, or Module.js may not be available.");
+        return false;
     }
 
     private async Task Delete(OpenWeather openWeatherToDelete)

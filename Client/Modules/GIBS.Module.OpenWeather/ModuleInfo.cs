@@ -9,9 +9,9 @@ namespace GIBS.Module.OpenWeather
         {
             Name = "OpenWeather",
             Description = "Weather data provided by OpenWeatherMap.org",
-            Version = "10.0.4",
+            Version = "10.2.6",
             ServerManagerType = "GIBS.Module.OpenWeather.Manager.OpenWeatherManager, GIBS.Module.OpenWeather.Server.Oqtane",
-            ReleaseVersions = "1.0.3,10.0.4",
+            ReleaseVersions = "1.0.3,10.0.4,10.2.6",
             Dependencies = "GIBS.Module.OpenWeather.Shared.Oqtane, Oqtane.Licensing.Client.Oqtane, Oqtane.Licensing.Shared.Oqtane",
             PackageName = "GIBS.Module.OpenWeather" 
 

@@ -4,6 +4,11 @@ var GIBS = GIBS || {};
 GIBS.OpenWeather = {
 };
 
+// Signal that this module's scripts are loaded and ready
+window.GIBS = window.GIBS || {};
+window.GIBS.modulesLoadedStatus = window.GIBS.modulesLoadedStatus || {};
+window.GIBS.modulesLoadedStatus.OpenWeatherLoaded = true;
+
  ////Function to initialize the Leaflet map
 GIBS.OpenWeather.initializeMap = function (mapDivId, latitude, longitude, mapZoom, locationName, leafletImagesPath) {
     try {
