@@ -66,7 +66,7 @@ namespace GIBS.Module.OpenWeather.Client.Services
             }
         }
 
-        public async Task<WeatherOverview?> GetWeatherOverviewAsync()
+        public async Task<WeatherOverview> GetWeatherOverviewAsync()
         {
             string url = $"{ApiOverviewUrl}?lat={_latitude}&lon={_longitude}&units={_units}&appid={_apiKey}";
             try
@@ -74,7 +74,7 @@ namespace GIBS.Module.OpenWeather.Client.Services
                 HttpResponseMessage response = await httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 var jsonStream = await response.Content.ReadAsStreamAsync();
-                WeatherOverview? overviewData = await JsonSerializer.DeserializeAsync<WeatherOverview>(jsonStream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                WeatherOverview overviewData = await JsonSerializer.DeserializeAsync<WeatherOverview>(jsonStream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 return overviewData;
             }
             catch (HttpRequestException ex)
@@ -94,7 +94,7 @@ namespace GIBS.Module.OpenWeather.Client.Services
             }
         }
 
-        public async Task<LocationData?> GetLocationDataAsync()
+        public async Task<LocationData> GetLocationDataAsync()
         {
             string url = $"{ApiGeoReverseUrl}?lat={_latitude}&lon={_longitude}&limit=1&appid={_apiKey}";
             try
@@ -102,7 +102,7 @@ namespace GIBS.Module.OpenWeather.Client.Services
                 HttpResponseMessage response = await httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 var jsonStream = await response.Content.ReadAsStreamAsync();
-                List<LocationData>? locationList = await JsonSerializer.DeserializeAsync<List<LocationData>>(jsonStream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                List<LocationData> locationList = await JsonSerializer.DeserializeAsync<List<LocationData>>(jsonStream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 if (locationList != null && locationList.Count > 0)
                 {
                     return locationList[0];
